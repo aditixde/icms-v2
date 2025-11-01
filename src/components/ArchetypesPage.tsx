@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Layers, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, Layers, RefreshCw, SlidersHorizontal, Info } from 'lucide-react';
 import { generateSyntheticFirms } from '../utils/firmGenerator';
 import { findFirmEquilibrium, FirmSimulationResult } from '../utils/firmSimulator';
 import { ArchetypeChart } from './ArchetypeChart';
@@ -64,13 +64,22 @@ export const ArchetypesPage = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Calculator</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => navigate('/archetype-details')}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Info className="h-4 w-4" />
+              <span>About Archetypes</span>
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Calculator</span>
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm p-6">

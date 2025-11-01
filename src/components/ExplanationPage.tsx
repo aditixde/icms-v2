@@ -127,14 +127,17 @@ export const ExplanationPage = () => {
 
         <section className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            6. Firm-Level Output Elasticity (Archetypes Only)
+            6. Output Elasticity (Optional)
           </h2>
           <div className="space-y-3 text-gray-700 leading-relaxed">
             <p>
-              In the Archetypes simulation, we include a small output elasticity to marginal net profit at the facility level, but bound the response within a configurable capacity range (default ±20% of baseline capacity). This reflects realistic utilization adjustments without implying large demand-driven output shifts.
+              Both the Calculator and Archetypes simulation support optional output elasticity to marginal net profit, bounded within a configurable capacity range (default ±20% of baseline capacity). This reflects realistic utilization adjustments without implying large demand-driven output shifts.
             </p>
             <p>
-              The sector equilibrium calculator intentionally omits elasticity for transparency; the Archetypes tab applies it at firm level to capture heterogeneous behavior.
+              <strong>In the Calculator:</strong> Elasticity is OFF by default for transparency. When enabled via the toggle, all sectors respond uniformly to a single α and capacity band.
+            </p>
+            <p>
+              <strong>In the Archetypes tab:</strong> Elasticity is applied at the individual firm level with heterogeneous behavior across facilities.
             </p>
           </div>
           <div className="mt-4">

@@ -8,6 +8,7 @@ export interface SectorResult {
   ccc: number;
   emissionsReduced: number;
   profitImpact: number;
+  effectiveProduction?: number;
 }
 
 export interface SimulationResult {
@@ -20,123 +21,101 @@ export interface SimulationResult {
   iterations: number;
   tolerance: number;
   sectors: SectorResult[];
+  enableElasticity?: boolean;
+  alpha?: number;
+  capacityBand?: number;
 }
 
-function calculateOptimalIntensity(baseIntensity: number, carbonPrice: number, k: number): number {
-  return Math.max(0, baseIntensity - carbonPrice / (2 * k));
+export interface SimOptions {
+  enableElasticity: boolean;
+  alpha: number;
+  capacityBand: number;
 }
 
-function calculateAbatementCost(
-  k: number,
-  production: number,
-  baseIntensity: number,
-  optimalIntensity: number
-): number {
-  const reduction = baseIntensity - optimalIntensity;
-  return k * production * reduction * reduction;
+function eStar(e0: number, k: number, P: number): number {
+  return Math.max(0, e0 - P / (2 * k));
 }
 
-function calculateBaselineProfit(
-  price: number,
-  production: number,
-  variableCost: number,
-  fixedCost: number
-): number {
-  return price * production - variableCost * production - fixedCost;
+function mnp(p: number, v: number, P: number, eS: number, tau: number, e0: number): number {
+  return (p - v) - P * (eS - tau) + P * (e0 - eS);
 }
 
-function calculateProfitWithCarbon(
-  price: number,
-  production: number,
-  variableCost: number,
-  fixedCost: number,
-  carbonPrice: number,
-  creditSurplus: number,
-  abatementCost: number
-): number {
-  const revenue = price * production;
-  const productionCost = variableCost * production;
-  const carbonCost = carbonPrice * Math.max(0, -creditSurplus);
-  const carbonRevenue = carbonPrice * Math.max(0, creditSurplus);
-
-  return revenue - productionCost - fixedCost - abatementCost - carbonCost + carbonRevenue;
+function clamp(x: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, x));
 }
 
 export function simulateAtPrice(
-  carbonPrice: number,
-  sectoralData: SectorData[],
-  costData: CostData[]
+  P: number,
+  sectoral: SectorData[],
+  cost: CostData[],
+  opts: SimOptions
 ): {
   marketBalance: number;
   totalEmissionsReduced: number;
   totalProfitImpact: number;
   sectorResults: SectorResult[];
 } {
-  let totalMarketBalance = 0;
-  let totalEmissionsReduced = 0;
-  let totalProfitImpact = 0;
-  const sectorResults: SectorResult[] = [];
+  const { enableElasticity, alpha, capacityBand } = opts;
 
-  for (let i = 0; i < sectoralData.length; i++) {
-    const sector = sectoralData[i];
-    const costs = costData[i];
-    const k = costs.k;
+  let totalAbate = 0;
+  let marketBal = 0;
+  let profitSum = 0;
+  const sectors: SectorResult[] = [];
 
-    const optimalIntensity = calculateOptimalIntensity(sector.intensity, carbonPrice, k);
+  for (let i = 0; i < sectoral.length; i++) {
+    const s = sectoral[i];
+    const c = cost[i];
 
-    const production = sector.production;
+    const e0 = s.intensity;
+    const tau = s.target;
+    const Q0 = s.production;
 
-    const creditSurplus = production * (sector.target - optimalIntensity);
+    const eS = eStar(e0, c.k, P);
 
-    const emissionsReduced = production * (sector.intensity - optimalIntensity);
+    let Qeff = Q0;
+    if (enableElasticity) {
+      const bandLo = (1 - capacityBand) * Q0;
+      const bandHi = (1 + capacityBand) * Q0;
+      const signal = mnp(c.price, c.variableCost, P, eS, tau, e0);
+      const trial = Q0 + alpha * signal;
+      Qeff = clamp(trial, bandLo, bandHi);
+    }
 
-    const abatementCost = calculateAbatementCost(k, production, sector.intensity, optimalIntensity);
+    const ccc = Qeff * (tau - eS);
+    const abate = (e0 - eS) * Qeff;
+    const abateCst = c.k * Qeff * Math.max(0, (e0 - eS)) ** 2;
+    const carbCost = ccc < 0 ? -ccc * P : 0;
+    const carbRev = ccc > 0 ? ccc * P : 0;
+    const dProfit = -abateCst - carbCost + carbRev;
 
-    const baselineProfit = calculateBaselineProfit(
-      costs.price,
-      production,
-      costs.variableCost,
-      costs.fixedCost
-    );
-
-    const profitWithCarbon = calculateProfitWithCarbon(
-      costs.price,
-      production,
-      costs.variableCost,
-      costs.fixedCost,
-      carbonPrice,
-      creditSurplus,
-      abatementCost
-    );
-
-    const profitImpact = profitWithCarbon - baselineProfit;
-
-    totalMarketBalance += creditSurplus;
-    totalEmissionsReduced += emissionsReduced;
-    totalProfitImpact += profitImpact;
-
-    sectorResults.push({
-      name: sector.name,
-      sector: sector.name,
-      optimalIntensity,
-      creditSurplus,
-      ccc: creditSurplus,
-      emissionsReduced,
-      profitImpact,
+    sectors.push({
+      name: s.name,
+      sector: s.name,
+      optimalIntensity: eS,
+      creditSurplus: ccc,
+      ccc,
+      emissionsReduced: abate,
+      profitImpact: dProfit,
+      effectiveProduction: Qeff
     });
+
+    totalAbate += abate;
+    marketBal += ccc;
+    profitSum += dProfit;
   }
 
   return {
-    marketBalance: totalMarketBalance,
-    totalEmissionsReduced,
-    totalProfitImpact,
-    sectorResults,
+    marketBalance: marketBal,
+    totalEmissionsReduced: totalAbate,
+    totalProfitImpact: profitSum,
+    sectorResults: sectors
   };
 }
 
 export function findEquilibriumPrice(
   sectoralData: SectorData[],
-  costData: CostData[]
+  costData: CostData[],
+  opts: SimOptions = { enableElasticity: false, alpha: 0.0005, capacityBand: 0.20 }
 ): SimulationResult {
   const tolerance = 1e-4;
   const maxIterations = 200;
@@ -146,11 +125,10 @@ export function findEquilibriumPrice(
   let iterations = 0;
   let equilibriumFound = false;
   let equilibriumPrice = (pMin + pMax) / 2;
-  let result = simulateAtPrice(equilibriumPrice, sectoralData, costData);
+  let result = simulateAtPrice(equilibriumPrice, sectoralData, costData, opts);
 
-  // Check if equilibrium exists in range
-  const lowResult = simulateAtPrice(pMin, sectoralData, costData);
-  const highResult = simulateAtPrice(pMax, sectoralData, costData);
+  const lowResult = simulateAtPrice(pMin, sectoralData, costData, opts);
+  const highResult = simulateAtPrice(pMax, sectoralData, costData, opts);
 
   if (lowResult.marketBalance * highResult.marketBalance > 0) {
     return {
@@ -163,12 +141,15 @@ export function findEquilibriumPrice(
       equilibriumFound: false,
       iterations,
       tolerance,
+      enableElasticity: opts.enableElasticity,
+      alpha: opts.alpha,
+      capacityBand: opts.capacityBand
     };
   }
 
   while (pMax - pMin > tolerance && iterations < maxIterations) {
     const pMid = (pMin + pMax) / 2;
-    result = simulateAtPrice(pMid, sectoralData, costData);
+    result = simulateAtPrice(pMid, sectoralData, costData, opts);
     equilibriumPrice = pMid;
     iterations++;
 
@@ -198,5 +179,8 @@ export function findEquilibriumPrice(
     equilibriumFound,
     iterations,
     tolerance,
+    enableElasticity: opts.enableElasticity,
+    alpha: opts.alpha,
+    capacityBand: opts.capacityBand
   };
 }

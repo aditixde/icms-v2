@@ -12,6 +12,9 @@ export default function EquilibriumFinder() {
   const [sectoralData, setSectoralData] = useState<SectorData[]>(SECTORAL_DATA);
   const [costData, setCostData] = useState<CostData[]>(COST_DATA);
   const [result, setResult] = useState<SimulationResult | null>(null);
+  const [enableElasticity, setEnableElasticity] = useState(false);
+  const [alpha, setAlpha] = useState(0.0005);
+  const [capacityBand, setCapacityBand] = useState(0.20);
 
   const handleSectoralDataChange = (index: number, field: keyof SectorData, value: string) => {
     const numValue = parseFloat(value);
@@ -34,7 +37,11 @@ export default function EquilibriumFinder() {
   };
 
   const handleFindEquilibrium = () => {
-    const equilibriumResult = findEquilibriumPrice(sectoralData, costData);
+    const equilibriumResult = findEquilibriumPrice(sectoralData, costData, {
+      enableElasticity,
+      alpha,
+      capacityBand
+    });
     setResult(equilibriumResult);
   };
 
@@ -203,6 +210,63 @@ export default function EquilibriumFinder() {
           </div>
         </div>
 
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-blue-900 mb-4">Elasticity Controls (Optional)</h2>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800">
+              When elasticity is ON, sector output adjusts slightly with profitability, bounded by ±capacity. This mirrors the firm-level logic.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="enableElasticity"
+                checked={enableElasticity}
+                onChange={(e) => setEnableElasticity(e.target.checked)}
+                className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <label htmlFor="enableElasticity" className="text-sm font-medium text-gray-700">
+                Enable Elastic Output (firm-style)
+              </label>
+            </div>
+            {enableElasticity && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-8">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Elasticity (α)
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="0.002"
+                    step="0.0001"
+                    value={alpha}
+                    onChange={(e) => setAlpha(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="text-center text-sm text-gray-600 mt-1">{alpha.toFixed(4)}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Capacity Band (±%)
+                  </label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="30"
+                    step="1"
+                    value={capacityBand * 100}
+                    onChange={(e) => setCapacityBand(Number(e.target.value) / 100)}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="text-center text-sm text-gray-600 mt-1">±{(capacityBand * 100).toFixed(0)}%</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex justify-center gap-4 mb-6">
           <button
             onClick={handleFindEquilibrium}
@@ -304,6 +368,47 @@ export default function EquilibriumFinder() {
             <div className="mt-6">
               <SectorPositionChart results={result} />
             </div>
+
+            {result.enableElasticity && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Sector Output Response</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">Sector</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-700">Baseline Q₀</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-700">Effective Q'</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-700">Change (%)</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-700">Optimal ε*</th>
+                        <th className="px-4 py-3 text-right font-medium text-gray-700">CCC Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {result.sectorResults.map((sector, idx) => {
+                        const baselineQ = sectoralData[idx].production;
+                        const effectiveQ = sector.effectiveProduction || baselineQ;
+                        const changePercent = ((effectiveQ - baselineQ) / baselineQ) * 100;
+                        return (
+                          <tr key={sector.name} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-medium text-gray-900">{sector.name}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{baselineQ.toFixed(2)}</td>
+                            <td className="px-4 py-3 text-right text-gray-700">{effectiveQ.toFixed(2)}</td>
+                            <td className={`px-4 py-3 text-right font-medium ${changePercent > 0 ? 'text-green-600' : changePercent < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                              {changePercent > 0 ? '+' : ''}{changePercent.toFixed(2)}%
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-700">{sector.optimalIntensity.toFixed(3)}</td>
+                            <td className={`px-4 py-3 text-right font-medium ${sector.ccc > 0 ? 'text-green-600' : sector.ccc < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                              {sector.ccc.toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

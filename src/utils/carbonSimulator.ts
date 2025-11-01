@@ -1,4 +1,4 @@
-import { SectorData, CostData, ABATEMENT_COEFFICIENT, P_MIN, P_MAX } from '../data/constants';
+import { SectorData, CostData, P_MIN, P_MAX } from '../data/constants';
 
 export interface SectorResult {
   name: string;
@@ -138,8 +138,8 @@ export function findEquilibriumPrice(
   sectoralData: SectorData[],
   costData: CostData[]
 ): SimulationResult {
-  const tolerance = 1e-6;
-  const maxIterations = 10000;
+  const tolerance = 1e-4;
+  const maxIterations = 200;
 
   let pMin = P_MIN;
   let pMax = P_MAX;

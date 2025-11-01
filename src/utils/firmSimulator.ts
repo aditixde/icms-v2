@@ -24,8 +24,23 @@ export interface ArchetypeSummary {
   totalCreditBalance: number;
 }
 
-function calculateOptimalIntensity(baseIntensity: number, carbonPrice: number, k: number): number {
-  return Math.max(0, baseIntensity - carbonPrice / (2 * k));
+function eStar(e0: number, k: number, P: number): number {
+  return Math.max(0, e0 - P / (2 * k));
+}
+
+function MNP(p: number, v: number, P: number, eS: number, tau: number, e0: number): number {
+  return p - v - P * (eS - tau) + P * (e0 - eS);
+}
+
+function QwithElasticity(
+  Q0: number,
+  alpha: number,
+  mnp: number,
+  capMin: number,
+  capMax: number
+): number {
+  const trial = Q0 + alpha * mnp;
+  return Math.min(capMax, Math.max(capMin, trial));
 }
 
 function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
@@ -44,11 +59,24 @@ function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
   });
 
   const updatedFirms = firms.map(firm => {
-    const optimalIntensity = calculateOptimalIntensity(firm.baseIntensity, carbonPrice, firm.k);
-    const creditBalance = firm.production * (firm.target - optimalIntensity);
-    const emissionsReduced = firm.production * (firm.baseIntensity - optimalIntensity);
-    const intensityReduction = firm.baseIntensity - optimalIntensity;
-    const abatementCost = firm.k * firm.production * intensityReduction * intensityReduction;
+    const Q0 = firm.production;
+    const e0 = firm.baseIntensity;
+    const tau = firm.target;
+    const p = firm.price;
+    const v = firm.variableCost;
+    const k = firm.k;
+    const alpha = firm.alpha;
+    const capMin = firm.capMin;
+    const capMax = firm.capMax;
+
+    const eS = eStar(e0, k, carbonPrice);
+    const mnp = MNP(p, v, carbonPrice, eS, tau, e0);
+    const Q = QwithElasticity(Q0, alpha, mnp, capMin, capMax);
+
+    const creditBalance = Q * (tau - eS);
+    const emissionsReduced = (e0 - eS) * Q;
+    const intensityReduction = Math.max(0, e0 - eS);
+    const abatementCost = k * Q * intensityReduction * intensityReduction;
 
     const carbonCost = carbonPrice * Math.max(0, -creditBalance);
     const carbonRevenue = carbonPrice * Math.max(0, creditBalance);
@@ -62,12 +90,13 @@ function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
 
     return {
       ...firm,
-      optimalIntensity,
+      optimalIntensity: eS,
       creditBalance,
       emissionsReduced,
       abatementCost,
       profitChange,
-      archetype
+      archetype,
+      actualProduction: Q
     };
   });
 
@@ -80,8 +109,8 @@ function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
 }
 
 export function findFirmEquilibrium(firms: SyntheticFirm[]): FirmSimulationResult {
-  const tolerance = 1e-6;
-  const maxIterations = 2000;
+  const tolerance = 1e-4;
+  const maxIterations = 200;
 
   let pMin = 0;
   let pMax = 100000;

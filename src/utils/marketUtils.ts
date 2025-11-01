@@ -1,5 +1,3 @@
-import { SectorResult } from './carbonSimulator';
-
 const ROW_TOL = 1e-6;
 
 export type Classification = 'seller' | 'buyer' | 'neutral';

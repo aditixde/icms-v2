@@ -127,7 +127,49 @@ export const ExplanationPage = () => {
 
         <section className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            6. What Each Output Means
+            6. Firm-Level Output Elasticity (Archetypes Only)
+          </h2>
+          <div className="space-y-3 text-gray-700 leading-relaxed">
+            <p>
+              In the Archetypes simulation, we include a small output elasticity to marginal net profit at the facility level, but bound the response within a configurable capacity range (default ±20% of baseline capacity). This reflects realistic utilization adjustments without implying large demand-driven output shifts.
+            </p>
+            <p>
+              The sector equilibrium calculator intentionally omits elasticity for transparency; the Archetypes tab applies it at firm level to capture heterogeneous behavior.
+            </p>
+          </div>
+          <div className="mt-4">
+            <p className="text-gray-700 mb-2 font-medium">Key equations for firm-level model:</p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Optimal intensity:</p>
+                <BlockMath math="\varepsilon_i^* = \max(0, \varepsilon_{0i} - \frac{P}{2k_i})" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Marginal Net Profit:</p>
+                <BlockMath math="MNP_i = p_i - v_i - P(\varepsilon_i^* - \tau_i) + P(\varepsilon_{0i} - \varepsilon_i^*)" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Elastic output with capacity bounds:</p>
+                <BlockMath math="Q'_i = \text{clamp}(Q_{0i} + \alpha_i \cdot MNP_i, [(1-b)Q_{0i}, (1+b)Q_{0i}])" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Credit balance:</p>
+                <BlockMath math="S_i = Q'_i(\tau_i - \varepsilon_i^*)" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Abatement resource cost:</p>
+                <BlockMath math="C_{abate,i} = k_i \cdot Q'_i \cdot (\max(0, \varepsilon_{0i} - \varepsilon_i^*))^2" />
+              </div>
+            </div>
+            <p className="text-gray-700 mt-4">
+              Where α (alpha) is the elasticity parameter (default 0.0005) and b is the capacity band (default 0.20 or ±20%).
+            </p>
+          </div>
+        </section>
+
+        <section className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+            7. What Each Output Means
           </h2>
           <div className="overflow-x-auto">
             <table className="min-w-full border border-gray-300 text-sm">
@@ -181,7 +223,7 @@ export const ExplanationPage = () => {
 
         <section className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            7. Preloaded Parameters
+            8. Preloaded Parameters
           </h2>
           <p className="text-gray-700 leading-relaxed mb-4">
             Each sector has predefined data representing its baseline emissions, production, intensity, and cost structure.
@@ -325,7 +367,7 @@ export const ExplanationPage = () => {
 
         <section className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            8. Key Insights
+            9. Key Insights
           </h2>
           <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
             <li>Higher carbon price → higher abatement → more sellers, fewer buyers</li>
@@ -337,7 +379,7 @@ export const ExplanationPage = () => {
 
         <section className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            9. Assumptions
+            10. Assumptions
           </h2>
           <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
             <li>Firms act rationally to maximize profits.</li>

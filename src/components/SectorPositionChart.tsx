@@ -66,7 +66,7 @@ export const SectorPositionChart = ({ results }: SectorPositionChartProps) => {
               <LabelList
                 dataKey="balance"
                 position="top"
-                formatter={(v: number) => v.toFixed(1)}
+                formatter={(v: unknown) => typeof v === 'number' ? v.toFixed(1) : ''}
               />
             </Bar>
           </BarChart>

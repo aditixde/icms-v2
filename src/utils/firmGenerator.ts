@@ -12,12 +12,16 @@ export interface SyntheticFirm {
   variableCost: number;
   fixedCost: number;
   k: number;
+  alpha: number;
+  capMin: number;
+  capMax: number;
   optimalIntensity?: number;
   creditBalance?: number;
   emissionsReduced?: number;
   abatementCost?: number;
   profitChange?: number;
   archetype?: string;
+  actualProduction?: number;
 }
 
 export const SECTOR_COMPANY_COUNTS: Record<string, number> = {
@@ -32,7 +36,12 @@ export const SECTOR_COMPANY_COUNTS: Record<string, number> = {
   'Petrochemicals': 11
 };
 
-export function generateSyntheticFirms(jitterPercent: number, seed: number): SyntheticFirm[] {
+export function generateSyntheticFirms(
+  jitterPercent: number,
+  seed: number,
+  alpha: number = 0.0005,
+  capacityBand: number = 0.20
+): SyntheticFirm[] {
   const rng = createSeededRandom(seed);
   const firms: SyntheticFirm[] = [];
   let firmCounter = 0;
@@ -52,17 +61,21 @@ export function generateSyntheticFirms(jitterPercent: number, seed: number): Syn
     for (let i = 0; i < numCompanies; i++) {
       firmCounter++;
 
+      const Q0 = rng.jitter(baseProduction, jitterPercent);
       firms.push({
         id: `F${firmCounter.toString().padStart(4, '0')}`,
         sector: sector.name,
         sectorIndex,
-        production: rng.jitter(baseProduction, jitterPercent),
+        production: Q0,
         baseIntensity: rng.jitter(baseIntensity, jitterPercent),
         target: rng.jitter(baseTarget, jitterPercent * 0.5),
         price: rng.jitter(basePrice, jitterPercent),
         variableCost: rng.jitter(baseVariableCost, jitterPercent),
         fixedCost: rng.jitter(baseFixedCost, jitterPercent),
-        k: rng.jitter(baseK, jitterPercent)
+        k: rng.jitter(baseK, jitterPercent),
+        alpha: alpha,
+        capMin: (1 - capacityBand) * Q0,
+        capMax: (1 + capacityBand) * Q0
       });
     }
   });

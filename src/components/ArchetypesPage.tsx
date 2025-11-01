@@ -11,13 +11,15 @@ export const ArchetypesPage = () => {
   const navigate = useNavigate();
   const [jitterPercent, setJitterPercent] = useState(10);
   const [seed, setSeed] = useState(42);
+  const [alpha, setAlpha] = useState(0.0005);
+  const [capacityBand, setCapacityBand] = useState(0.20);
   const [result, setResult] = useState<FirmSimulationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
   const runSimulation = () => {
     setIsCalculating(true);
     setTimeout(() => {
-      const firms = generateSyntheticFirms(jitterPercent, seed);
+      const firms = generateSyntheticFirms(jitterPercent, seed, alpha, capacityBand);
       const simulationResult = findFirmEquilibrium(firms);
       setResult(simulationResult);
       setIsCalculating(false);
@@ -76,7 +78,7 @@ export const ArchetypesPage = () => {
             <SlidersHorizontal className="h-5 w-5 text-gray-700" />
             <h2 className="text-lg font-semibold text-gray-800">Simulation Controls</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Jitter (%)
@@ -102,6 +104,36 @@ export const ArchetypesPage = () => {
                 onChange={(e) => setSeed(Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Elasticity (α)
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="0.002"
+                step="0.0001"
+                value={alpha}
+                onChange={(e) => setAlpha(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="text-center text-sm text-gray-600 mt-1">{alpha.toFixed(4)}</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Capacity Band
+              </label>
+              <input
+                type="range"
+                min="0.10"
+                max="0.30"
+                step="0.01"
+                value={capacityBand}
+                onChange={(e) => setCapacityBand(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="text-center text-sm text-gray-600 mt-1">±{(capacityBand * 100).toFixed(0)}%</div>
             </div>
             <div className="flex items-end">
               <button

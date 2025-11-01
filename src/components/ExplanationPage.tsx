@@ -26,197 +26,163 @@ export const ExplanationPage = () => {
           </button>
         </div>
 
+        {/* 1. Overview */}
         <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            1. Overview
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">1. Overview</h2>
           <div className="space-y-3 text-gray-700 leading-relaxed">
             <p>
-              This simulator estimates the equilibrium carbon price for India's industrial carbon market.
+              This simulator estimates the equilibrium carbon price for India’s industrial carbon market under an
+              intensity-based compliance scheme. The equilibrium price (₹ per tCO₂) is the point where total supply of
+              carbon credits equals total demand — i.e., sellers’ surpluses exactly offset buyers’ deficits.
             </p>
             <p>
-              The equilibrium price (₹ per tCO₂) is the point where total supply of carbon credits equals total demand — that is, where sectors with surplus credits (low emissions) balance those that need to buy credits (high emissions).
-            </p>
-            <p>
-              Each sector's emissions intensity (tCO₂/unit of output) determines whether it becomes a credit seller or buyer.
+              Each sector/facility chooses its emissions intensity in response to the carbon price and may adjust output
+              slightly within a bounded capacity band (±b), reflecting realistic utilization changes.
             </p>
           </div>
         </section>
 
+        {/* 2. How the Model Works */}
         <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            2. How the Model Works
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">2. How the Model Works</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
-            Each sector is modeled as a representative firm that:
+            Each firm (or sectoral representative) is characterized by:
           </p>
           <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mb-4">
-            <li>Produces a quantity Q<sub>i</sub></li>
-            <li>Has a baseline emissions intensity ε<sub>0i</sub></li>
-            <li>Has a target emissions intensity τ<sub>i</sub></li>
-            <li>Faces a carbon price P (in ₹/tCO₂)</li>
-            <li>Can reduce emissions at a cost determined by an abatement coefficient k<sub>i</sub></li>
+            <li>Baseline output Q<sub>0i</sub> and baseline emissions intensity ε<sub>0i</sub></li>
+            <li>Target emissions intensity τ<sub>i</sub> under the compliance rule</li>
+            <li>Product price p<sub>i</sub>, variable cost v<sub>i</sub>, fixed cost F<sub>i</sub></li>
+            <li>Abatement cost coefficient k<sub>i</sub> (quadratic abatement cost)</li>
+            <li>Elasticity α<sub>i</sub> and capacity band b<sub>i</sub> for bounded output response</li>
           </ul>
+          <p className="text-gray-700 leading-relaxed">
+            At any trial carbon price P, the model computes each firm’s optimal post-abatement intensity, bounded output,
+            carbon credit balance, abatement cost, and profit impact; then aggregates to check market balance.
+          </p>
+        </section>
 
+        {/* 3. Emission Intensity Response */}
+        <section className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">3. Emission Intensity Response</h2>
           <p className="text-gray-700 leading-relaxed mb-3">
-            At a given carbon price P:
+            Firms lower intensity as price rises, with quadratic abatement costs. The first-order condition yields:
           </p>
-          <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mb-4">
-            <li>The firm decides how much to abate (lower its emissions intensity)</li>
-            <li>It earns or pays for carbon credits depending on its position</li>
+          <BlockMath math=" \varepsilon_i^*(P) = \max\!\left(0,\; \varepsilon_{0i} - \frac{P}{2k_i}\right) " />
+          <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mt-3">
+            <li>Lower k<sub>i</sub> → cheaper abatement → faster intensity improvement with P</li>
+            <li>Higher k<sub>i</sub> → costlier abatement → slower response</li>
           </ul>
+        </section>
 
-          <div className="mt-4">
-            <p className="text-gray-700 mb-2 font-medium">Carbon credit position:</p>
-            <BlockMath math="S_i = Q_i(\tau_i - \varepsilon_i)" />
-            <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mt-3">
-              <li>If S<sub>i</sub> &gt; 0: the firm sells credits (it's efficient).</li>
-              <li>If S<sub>i</sub> &lt; 0: the firm buys credits (it emits too much).</li>
-            </ul>
+        {/* 4. Bounded Output Elasticity */}
+        <section className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">4. Bounded Output Elasticity</h2>
+          <p className="text-gray-700 leading-relaxed mb-3">
+            Output adjusts slightly with profitability but is constrained within a facility capacity band ±b
+            (e.g., ±20%) around baseline Q<sub>0i</sub>. Define the marginal net profitability (MNP) signal:
+          </p>
+          <BlockMath math=" MNP_i(P) = p_i - v_i - P\,(\varepsilon_i^* - \tau_i) + P\,(\varepsilon_{0i} - \varepsilon_i^*) " />
+          <p className="text-gray-700 leading-relaxed mt-3">
+            The elastic (unbounded) response is:
+          </p>
+          <BlockMath math=" Q'_i(P) = Q_{0i} + \alpha_i \cdot MNP_i(P) " />
+          <p className="text-gray-700 leading-relaxed mt-3">
+            We then clamp to capacity:
+          </p>
+          <BlockMath math=" Q_i^*(P) = \min\!\Big((1+b_i)Q_{0i},\; \max\!\big((1-b_i)Q_{0i},\; Q'_i(P)\big)\Big) " />
+          <p className="text-gray-700 leading-relaxed mt-3">
+            In the Calculator, this bounded elasticity can be toggled ON/OFF; in Archetypes, it’s applied at firm level
+            with heterogeneous α<sub>i</sub>, b<sub>i</sub>.
+          </p>
+        </section>
+
+        {/* 5. Carbon Credit Balance */}
+        <section className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">5. Carbon Credit Balance</h2>
+          <p className="text-gray-700 leading-relaxed mb-3">
+            Under the intensity rule, a firm’s carbon credit certificate (CCC) balance is:
+          </p>
+          <BlockMath math=" S_i(P) = Q_i^*(P)\,\big(\tau_i - \varepsilon_i^*(P)\big) " />
+          <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mt-3">
+            <li>S<sub>i</sub> &gt; 0 → surplus (seller); S<sub>i</sub> &lt; 0 → deficit (buyer)</li>
+            <li>Distinct from physical emissions reduced: R<sub>i</sub> = Q<sub>i</sub><sup>*</sup>(ε<sub>0i</sub> − ε<sub>i</sub><sup>*</sup>)</li>
+          </ul>
+          <div className="mt-3">
+            <p className="text-gray-700 font-medium mb-1">Aggregation and clearing:</p>
+            <BlockMath math=" B(P) = \sum_i S_i(P), \quad \text{equilibrium when } B(P^*)=0. " />
           </div>
         </section>
 
+        {/* 6. Profit Accounting (with real abatement cost) */}
         <section className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            3. Emission Intensity Response
+            6. Profit Accounting (includes real abatement cost)
           </h2>
-          <p className="text-gray-700 leading-relaxed mb-3">
-            Each firm lowers its intensity when the carbon price rises, following:
-          </p>
-          <BlockMath math="\varepsilon_i^*(P) = \varepsilon_{0i} - \frac{P}{2k_i}" />
-          <p className="text-gray-700 leading-relaxed mt-4">This means:</p>
-          <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2 mt-2">
-            <li>Low k<sub>i</sub> → cheaper to abate → faster improvement with price</li>
-            <li>High k<sub>i</sub> → costly to abate → slower response</li>
-          </ul>
+          <div className="space-y-3 text-gray-700 leading-relaxed">
+            <p>Abatement resource cost:</p>
+            <BlockMath math=" C^{\text{abate}}_i(P) = k_i \, Q_i^*(P)\, \big(\varepsilon_{0i} - \varepsilon_i^*(P)\big)^2 " />
+            <p>Credit transfers (zero-sum in aggregate):</p>
+            <BlockMath math=" \text{Carbon cashflow}_i = P\cdot \max(0,S_i) - P\cdot \max(0,-S_i) " />
+            <p>Profit change (vs baseline) used in the app:</p>
+            <BlockMath math=" \Delta \Pi_i(P) = -\, C^{\text{abate}}_i(P)\;-\;P\max(0,-S_i(P))\;+\;P\max(0,S_i(P)). " />
+            <p>
+              At equilibrium, carbon transfers net to zero across firms, so total profit impact equals minus the sum of
+              abatement spending.
+            </p>
+          </div>
         </section>
 
+        {/* 7. Market Equilibrium (Bisection) */}
         <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            4. Market Equilibrium
-          </h2>
-          <p className="text-gray-700 leading-relaxed mb-3">
-            The market-clearing condition is:
-          </p>
-          <BlockMath math="\sum_i Q_i(\tau_i - \varepsilon_i^*(P^*)) = 0" />
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">7. Market Equilibrium</h2>
+          <p className="text-gray-700 leading-relaxed mb-3">The market-clearing condition is:</p>
+          <BlockMath math=" \sum_i Q_i^*(P^*)\big(\tau_i - \varepsilon_i^*(P^*)\big) = 0 " />
           <p className="text-gray-700 leading-relaxed mt-4">
-            This ensures that the total surplus of credits equals total deficit — i.e., supply = demand — and gives the equilibrium price P*.
+            The simulator uses a bisection search between ₹0 and ₹100{','}000 to find P* such that the market balance
+            is within a small tolerance (e.g., 10<sup>−4</sup> Mt CO₂). Monotonicity from the intensity rule guarantees
+            convergence under broad conditions.
           </p>
-        </section>
-
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            5. Algorithm: How the Simulator Finds P*
-          </h2>
-          <p className="text-gray-700 leading-relaxed mb-4">
-            The simulator uses a bisection search method to find the equilibrium price.
-          </p>
-          <p className="text-gray-700 font-medium mb-2">Step-by-step:</p>
-          <ol className="list-decimal list-inside text-gray-700 leading-relaxed space-y-2">
-            <li>Start with two price limits (₹ 0 and ₹ 100,000).</li>
-            <li>Compute total market balance at midpoint.</li>
-            <li>If balance &gt; 0 → supply &gt; demand → price is too high.</li>
-            <li>If balance &lt; 0 → demand &gt; supply → price is too low.</li>
-            <li>Adjust bounds and repeat until the imbalance is nearly zero.</li>
-            <li>The midpoint where balance ≈ 0 is the equilibrium price P*.</li>
+          <ol className="list-decimal list-inside text-gray-700 leading-relaxed space-y-2 mt-3">
+            <li>Compute balance at the midpoint price.</li>
+            <li>If balance &gt; 0 (excess supply), reduce the upper bound; else raise the lower bound.</li>
+            <li>Repeat until |balance| is below tolerance; midpoint is P*.</li>
           </ol>
-          <p className="text-gray-700 leading-relaxed mt-4">
-            This algorithm converges reliably because supply changes monotonically with price.
-          </p>
         </section>
 
+        {/* 8. What Each Output Means */}
         <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            6. Output Elasticity (Optional)
-          </h2>
-          <div className="space-y-3 text-gray-700 leading-relaxed">
-            <p>
-              Both the Calculator and Archetypes simulation support optional output elasticity to marginal net profit, bounded within a configurable capacity range (default ±20% of baseline capacity). This reflects realistic utilization adjustments without implying large demand-driven output shifts.
-            </p>
-            <p>
-              <strong>In the Calculator:</strong> Elasticity is OFF by default for transparency. When enabled via the toggle, all sectors respond uniformly to a single α and capacity band.
-            </p>
-            <p>
-              <strong>In the Archetypes tab:</strong> Elasticity is applied at the individual firm level with heterogeneous behavior across facilities.
-            </p>
-          </div>
-          <div className="mt-4">
-            <p className="text-gray-700 mb-2 font-medium">Key equations for firm-level model:</p>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Optimal intensity:</p>
-                <BlockMath math="\varepsilon_i^* = \max(0, \varepsilon_{0i} - \frac{P}{2k_i})" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Marginal Net Profit:</p>
-                <BlockMath math="MNP_i = p_i - v_i - P(\varepsilon_i^* - \tau_i) + P(\varepsilon_{0i} - \varepsilon_i^*)" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Elastic output with capacity bounds:</p>
-                <BlockMath math="Q'_i = \text{clamp}(Q_{0i} + \alpha_i \cdot MNP_i, [(1-b)Q_{0i}, (1+b)Q_{0i}])" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Credit balance:</p>
-                <BlockMath math="S_i = Q'_i(\tau_i - \varepsilon_i^*)" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Abatement resource cost:</p>
-                <BlockMath math="C_{abate,i} = k_i \cdot Q'_i \cdot (\max(0, \varepsilon_{0i} - \varepsilon_i^*))^2" />
-              </div>
-            </div>
-            <p className="text-gray-700 mt-4">
-              Where α (alpha) is the elasticity parameter (default 0.0005) and b is the capacity band (default 0.20 or ±20%).
-            </p>
-          </div>
-        </section>
-
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            7. What Each Output Means
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">8. What Each Output Means</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full border border-gray-300 text-sm">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                    Output
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                    Description
-                  </th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Output</th>
+                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Description</th>
                 </tr>
               </thead>
               <tbody>
                 <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-3">Carbon Price (₹/tCO₂)</td>
                   <td className="border border-gray-300 px-4 py-3">
-                    Carbon Price (₹/tCO₂)
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    The equilibrium price that balances total supply and demand.
+                    Equilibrium price P* that clears the market (total CCC supply = total CCC demand).
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-3">Emissions Reduced (Mt CO₂)</td>
                   <td className="border border-gray-300 px-4 py-3">
-                    Emissions Reduced (MtCO₂)
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    Total reduction in CO₂ emissions compared to baseline.
+                    Sum of Q<sub>i</sub><sup>*</sup>(ε<sub>0i</sub> − ε<sub>i</sub><sup>*</sup>) across firms at P*.
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-3">Market Balance (Mt CO₂)</td>
                   <td className="border border-gray-300 px-4 py-3">
-                    Market Balance (MtCO₂)
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    Net difference between supply and demand (≈ 0 at equilibrium).
+                    Σ S<sub>i</sub>(P*). Should be ≈ 0 at equilibrium (within tolerance).
                   </td>
                 </tr>
                 <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-4 py-3">Total Profit Impact (₹)</td>
                   <td className="border border-gray-300 px-4 py-3">
-                    Total Profit Impact (₹)
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3">
-                    Change in total sectoral profits after abatement and credit trading.
+                    Sum of −abatement costs ± carbon cash flows. At equilibrium, equals −(total abatement spend).
                   </td>
                 </tr>
               </tbody>
@@ -224,50 +190,49 @@ export const ExplanationPage = () => {
           </div>
         </section>
 
+        {/* 9. Preloaded Parameters */}
         <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            8. Preloaded Parameters
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">9. Preloaded Parameters</h2>
           <p className="text-gray-700 leading-relaxed mb-4">
-            Each sector has predefined data representing its baseline emissions, production, intensity, and cost structure.
-            The abatement cost coefficient k<sub>i</sub> determines how sensitive a sector is to carbon prices:
+            The app ships with sectoral baselines and cost data. Abatement sensitivity is governed by k, while α (when
+            enabled) and b control the bounded output response.
           </p>
 
-          <div className="overflow-x-auto mb-6">
-            <table className="min-w-full border border-gray-300 text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                    Sector
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-right font-semibold">
-                    k<sub>i</sub> (₹ per (tCO₂/t)²)
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold">
-                    Behavior
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {COST_DATA.map((cost) => (
-                  <tr key={cost.sector} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-3">
-                      {cost.sector}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-right">
-                      {cost.k.toLocaleString()}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3">
-                      {cost.k <= 120 ? 'Relatively low cost / Easy reduction' :
-                       cost.k <= 150 ? 'Moderate cost / Medium reduction' :
-                       cost.k <= 180 ? 'Moderate-high cost' :
-                       'Expensive abatement'}
-                    </td>
+          {/* k-table if available on COST_DATA */}
+          {'map' in COST_DATA ? (
+            <div className="overflow-x-auto mb-6">
+              <table className="min-w-full border border-gray-300 text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Sector</th>
+                    <th className="border border-gray-300 px-4 py-3 text-right font-semibold">
+                      k (₹ per (tCO₂/t)$^2$)
+                    </th>
+                    <th className="border border-gray-300 px-4 py-3 text-left font-semibold">Heuristic behavior</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {(COST_DATA as any).map((cost: any) => (
+                    <tr key={cost.sector} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-4 py-3">{cost.sector}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-right">
+                        {Number(cost.k ?? 150).toLocaleString()}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        {Number(cost.k ?? 150) <= 120
+                          ? 'Relatively low cost / Easy reduction'
+                          : Number(cost.k ?? 150) <= 150
+                          ? 'Moderate cost / Medium reduction'
+                          : Number(cost.k ?? 150) <= 180
+                          ? 'Moderate-high cost'
+                          : 'Expensive abatement'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
 
           <div className="mb-6">
             <h3 className="font-semibold text-gray-800 mb-3">Sectoral Data</h3>
@@ -275,41 +240,25 @@ export const ExplanationPage = () => {
               <table className="min-w-full border border-gray-300 text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="border border-gray-300 px-4 py-2 text-left">
-                      Sector
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Emissions (Mt CO₂)
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Production
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Intensity (ε₀)
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Target (τ)
-                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">Sector</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Emissions (Mt CO₂)</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Production</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Intensity (ε₀)</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Target (τ)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {SECTORAL_DATA.map((sector) => (
+                  {(SECTORAL_DATA as any).map((sector: any) => (
                     <tr key={sector.name} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2">
-                        {sector.name}
-                      </td>
+                      <td className="border border-gray-300 px-4 py-2">{sector.name}</td>
                       <td className="border border-gray-300 px-4 py-2 text-right">
                         {(sector.production * sector.intensity).toFixed(1)}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right">
-                        {sector.production.toLocaleString()}
+                        {Number(sector.production).toLocaleString()}
                       </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {sector.intensity}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {sector.target}
-                      </td>
+                      <td className="border border-gray-300 px-4 py-2 text-right">{sector.intensity}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-right">{sector.target}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -318,47 +267,33 @@ export const ExplanationPage = () => {
           </div>
 
           <div>
-            <h3 className="font-semibold text-gray-800 mb-3">
-              Cost Data (₹ per unit)
-            </h3>
+            <h3 className="font-semibold text-gray-800 mb-3">Cost Data (₹ per unit)</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full border border-gray-300 text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="border border-gray-300 px-4 py-2 text-left">
-                      Sector
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Fixed Cost
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Variable Cost
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Price
-                    </th>
-                    <th className="border border-gray-300 px-4 py-2 text-right">
-                      Abatement Cost (k)
-                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">Sector</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Fixed Cost</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Variable Cost</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Price</th>
+                    <th className="border border-gray-300 px-4 py-2 text-right">Abatement k</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {COST_DATA.map((cost) => (
+                  {(COST_DATA as any).map((cost: any) => (
                     <tr key={cost.sector} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-4 py-2">
-                        {cost.sector}
+                      <td className="border border-gray-300 px-4 py-2">{cost.sector}</td>
+                      <td className="border border-gray-300 px-4 py-2 text-right">
+                        {Number(cost.fixedCost).toLocaleString()}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right">
-                        {cost.fixedCost.toLocaleString()}
+                        {Number(cost.variableCost).toLocaleString()}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right">
-                        {cost.variableCost.toLocaleString()}
+                        {Number(cost.price).toLocaleString()}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-right">
-                        {cost.price.toLocaleString()}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2 text-right">
-                        {cost.k.toLocaleString()}
+                        {Number(cost.k ?? 150).toLocaleString()}
                       </td>
                     </tr>
                   ))}
@@ -368,29 +303,16 @@ export const ExplanationPage = () => {
           </div>
         </section>
 
+        {/* 10. Assumptions */}
         <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            9. Key Insights
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800">10. Assumptions</h2>
           <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
-            <li>Higher carbon price → higher abatement → more sellers, fewer buyers</li>
-            <li>Too low a price → many buyers, few sellers → market imbalance</li>
-            <li>Equilibrium ensures the market is self-balancing without central control</li>
-            <li>The model captures economic behavior: sectors abate until marginal cost = carbon price</li>
-          </ul>
-        </section>
-
-        <section className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            10. Assumptions
-          </h2>
-          <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
-            <li>Firms act rationally to maximize profits.</li>
-            <li>Each sector is represented by one aggregated firm.</li>
-            <li>Abatement costs are quadratic — reducing emissions gets progressively harder.</li>
-            <li>No elasticity (output doesn't depend on price).</li>
-            <li>Market is perfectly competitive.</li>
-            <li>All transactions occur at a single uniform price.</li>
+            <li>Firms maximize profit and face quadratic abatement costs.</li>
+            <li>Intensity response: ε<sub>i</sub><sup>*</sup> = max(0, ε<sub>0i</sub> − P/(2k<sub>i</sub>)).</li>
+            <li>Bounded output elasticity at firm level: small α, capacity band ±b (e.g., 20%).</li>
+            <li>Calculator: elasticity can be toggled ON/OFF; Archetypes: heterogeneous firm-level α, b.</li>
+            <li>Perfectly competitive carbon market; a single uniform price P clears the market.</li>
+            <li>At equilibrium, carbon transfers net to zero; aggregate profit impact equals total abatement spend.</li>
           </ul>
         </section>
       </div>

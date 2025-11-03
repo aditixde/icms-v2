@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Layers, RefreshCw, SlidersHorizontal, Info } from 'lucide-react';
+import { ArrowLeft, Layers, RefreshCw, SlidersHorizontal, Info, Download } from 'lucide-react';
 import { generateSyntheticFirms } from '../utils/firmGenerator';
 import { findFirmEquilibrium, FirmSimulationResult } from '../utils/firmSimulator';
 import { ArchetypeChart } from './ArchetypeChart';
 import { SectorArchetypeChart } from './SectorArchetypeChart';
+import { ArchetypeDetailsDrawer } from './ArchetypeDetailsDrawer';
+import { InsightCards } from './InsightCards';
+import { ProfitDecompositionChart } from './ProfitDecomposition';
 import { SECTORAL_DATA } from '../data/constants';
+import { generateInsights, computeProfitDecomposition, exportFirmsToCSV } from '../utils/archetypeAnalytics';
 
 export const ArchetypesPage = () => {
   const navigate = useNavigate();
@@ -15,6 +19,7 @@ export const ArchetypesPage = () => {
   const [capacityBand, setCapacityBand] = useState(0.20);
   const [result, setResult] = useState<FirmSimulationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
 
   const runSimulation = () => {
     setIsCalculating(true);
@@ -24,6 +29,32 @@ export const ArchetypesPage = () => {
       setResult(simulationResult);
       setIsCalculating(false);
     }, 50);
+  };
+
+  const applyPreset = (preset: 'conservative' | 'base' | 'liberal') => {
+    if (preset === 'conservative') {
+      setAlpha(0.0002);
+      setCapacityBand(0.10);
+    } else if (preset === 'base') {
+      setAlpha(0.0005);
+      setCapacityBand(0.20);
+    } else if (preset === 'liberal') {
+      setAlpha(0.0015);
+      setCapacityBand(0.30);
+    }
+    setTimeout(() => runSimulation(), 100);
+  };
+
+  const handleExportAll = () => {
+    if (!result) return;
+    const csv = exportFirmsToCSV(result.firms);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'all_firms_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -86,6 +117,26 @@ export const ArchetypesPage = () => {
           <div className="flex items-center space-x-3 mb-4">
             <SlidersHorizontal className="h-5 w-5 text-gray-700" />
             <h2 className="text-lg font-semibold text-gray-800">Simulation Controls</h2>
+          </div>
+          <div className="mb-4 flex gap-3">
+            <button
+              onClick={() => applyPreset('conservative')}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+            >
+              Conservative (α=0.0002, ±10%)
+            </button>
+            <button
+              onClick={() => applyPreset('base')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            >
+              Base (α=0.0005, ±20%)
+            </button>
+            <button
+              onClick={() => applyPreset('liberal')}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+            >
+              Liberal (α=0.0015, ±30%)
+            </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div>
@@ -237,7 +288,11 @@ export const ArchetypesPage = () => {
                   </thead>
                   <tbody>
                     {result.archetypeSummary.map((archetype, idx) => (
-                      <tr key={idx} className="border-t border-gray-200 hover:bg-gray-50">
+                      <tr
+                        key={idx}
+                        onClick={() => setSelectedArchetype(archetype.archetype)}
+                        className="border-t border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors"
+                      >
                         <td className="px-4 py-3 text-gray-900">{archetype.archetype}</td>
                         <td className="px-4 py-3 text-right text-gray-900">
                           {archetype.count}
@@ -258,12 +313,42 @@ export const ArchetypesPage = () => {
               </div>
             </div>
 
+            <InsightCards insights={generateInsights(result.firms, result.carbonPrice)} />
+
+            <ProfitDecompositionChart
+              decomposition={computeProfitDecomposition(result.firms, result.carbonPrice)}
+            />
+
             <ArchetypeChart archetypeSummary={result.archetypeSummary} />
 
             <SectorArchetypeChart sectorData={getSectorArchetypeData()} />
+
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <button
+                onClick={handleExportAll}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="h-5 w-5" />
+                <span>Download All Results (CSV)</span>
+              </button>
+            </div>
           </>
         )}
       </div>
+      {selectedArchetype && result && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setSelectedArchetype(null)}
+          />
+          <ArchetypeDetailsDrawer
+            archetype={selectedArchetype}
+            firms={result.firms}
+            totalQ={result.firms.reduce((s, f) => s + (f.actualProduction || f.production), 0)}
+            onClose={() => setSelectedArchetype(null)}
+          />
+        </>
+      )}
     </div>
   );
 };

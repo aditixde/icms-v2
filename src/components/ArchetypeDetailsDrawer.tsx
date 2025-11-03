@@ -112,12 +112,22 @@ export const ArchetypeDetailsDrawer = ({ archetype, firms, totalQ, onClose }: Ar
             </div>
 
             <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-600 mb-1">Δprofit per Firm</div>
+              <div className="text-sm text-gray-600 mb-1">Δprofit per Firm (₹ Lakh)</div>
               <div className="text-lg font-semibold text-gray-900">
-                Median: ₹{formatNumber(stats.medianProfitPerFirm, 0)}
+                Median: {formatNumber(stats.medianProfitPerFirm / 1e5, 2)}
               </div>
               <div className="text-xs text-gray-500">
-                IQR: [₹{formatNumber(stats.iqrProfitPerFirm[0], 0)}, ₹{formatNumber(stats.iqrProfitPerFirm[1], 0)}]
+                IQR: [{formatNumber(stats.iqrProfitPerFirm[0] / 1e5, 2)}, {formatNumber(stats.iqrProfitPerFirm[1] / 1e5, 2)}]
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-600 mb-1">Raw Signal (Q′trial − Q₀)</div>
+              <div className="text-lg font-semibold text-gray-900">
+                Median: {formatNumber(stats.medianRawSignal, 4)}
+              </div>
+              <div className="text-xs text-gray-500">
+                IQR: [{formatNumber(stats.iqrRawSignal[0], 4)}, {formatNumber(stats.iqrRawSignal[1], 4)}]
               </div>
             </div>
           </div>

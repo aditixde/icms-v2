@@ -22,6 +22,7 @@ export interface SyntheticFirm {
   profitChange?: number;
   archetype?: string;
   actualProduction?: number;
+  rawSignal?: number;
 }
 
 export const SECTOR_COMPANY_COUNTS: Record<string, number> = {

@@ -16,6 +16,8 @@ export interface ArchetypeStats {
   iqrCCCPerFirm: [number, number];
   medianProfitPerFirm: number;
   iqrProfitPerFirm: [number, number];
+  medianRawSignal: number;
+  iqrRawSignal: [number, number];
   firmsAtLowerCap: number;
   firmsAtUpperCap: number;
   percentAtLowerCap: number;
@@ -106,6 +108,8 @@ export function computeArchetypeStats(
       iqrCCCPerFirm: [0, 0],
       medianProfitPerFirm: 0,
       iqrProfitPerFirm: [0, 0],
+      medianRawSignal: 0,
+      iqrRawSignal: [0, 0],
       firmsAtLowerCap: 0,
       firmsAtUpperCap: 0,
       percentAtLowerCap: 0,
@@ -124,6 +128,7 @@ export function computeArchetypeStats(
   const qRatios = archetypeFirms.map(f => (f.actualProduction || f.production) / f.production);
   const cccValues = archetypeFirms.map(f => f.creditBalance || 0);
   const profitValues = archetypeFirms.map(f => f.profitChange || 0);
+  const rawSignalValues = archetypeFirms.map(f => f.rawSignal || 0);
 
   const kStats = computeDistributionStats(kValues);
   const gapStats = computeDistributionStats(gapValues);
@@ -131,6 +136,7 @@ export function computeArchetypeStats(
   const qStats = computeDistributionStats(qRatios);
   const cccStats = computeDistributionStats(cccValues);
   const profitStats = computeDistributionStats(profitValues);
+  const rawSignalStats = computeDistributionStats(rawSignalValues);
 
   const shareOfTotalQ = archetypeFirms.reduce((sum, f) => sum + (f.actualProduction || f.production), 0) / totalQ;
 
@@ -192,6 +198,8 @@ export function computeArchetypeStats(
     iqrCCCPerFirm: [cccStats.p25, cccStats.p75],
     medianProfitPerFirm: profitStats.median,
     iqrProfitPerFirm: [profitStats.p25, profitStats.p75],
+    medianRawSignal: rawSignalStats.median,
+    iqrRawSignal: [rawSignalStats.p25, rawSignalStats.p75],
     firmsAtLowerCap,
     firmsAtUpperCap,
     percentAtLowerCap: (firmsAtLowerCap / archetypeFirms.length) * 100,

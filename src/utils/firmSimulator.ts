@@ -13,6 +13,18 @@ export interface FirmSimulationResult {
   archetypeSummary: ArchetypeSummary[];
   equilibriumFound: boolean;
   iterations: number;
+  firmsAtLowerCap: number;
+  firmsAtUpperCap: number;
+  percentAtLowerCap: number;
+  percentAtUpperCap: number;
+  modelHealthChecks: ModelHealthChecks;
+}
+
+export interface ModelHealthChecks {
+  sUsesQPrime: boolean;
+  abatementUsesQPrime: boolean;
+  costUsesQPrime: boolean;
+  allPassed: boolean;
 }
 
 export interface ArchetypeSummary {
@@ -38,9 +50,10 @@ function QwithElasticity(
   mnp: number,
   capMin: number,
   capMax: number
-): number {
+): { Q: number; Qtrial: number } {
   const trial = Q0 + alpha * mnp;
-  return Math.min(capMax, Math.max(capMin, trial));
+  const clamped = Math.min(capMax, Math.max(capMin, trial));
+  return { Q: clamped, Qtrial: trial };
 }
 
 function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
@@ -71,7 +84,7 @@ function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
 
     const eS = eStar(e0, k, carbonPrice);
     const mnp = MNP(p, v, carbonPrice, eS, tau, e0);
-    const Q = QwithElasticity(Q0, alpha, mnp, capMin, capMax);
+    const { Q, Qtrial } = QwithElasticity(Q0, alpha, mnp, capMin, capMax);
 
     const creditBalance = Q * (tau - eS);
     const emissionsReduced = (e0 - eS) * Q;
@@ -96,7 +109,8 @@ function simulateFirmsAtPrice(firms: SyntheticFirm[], carbonPrice: number): {
       abatementCost,
       profitChange,
       archetype,
-      actualProduction: Q
+      actualProduction: Q,
+      rawSignal: Qtrial - Q0
     };
   });
 
@@ -215,6 +229,45 @@ function createSimulationResult(
 
   archetypeSummary.sort((a, b) => b.count - a.count);
 
+  let firmsAtLowerCap = 0;
+  let firmsAtUpperCap = 0;
+  const tolerance = 0.001;
+
+  firms.forEach(f => {
+    const Q = f.actualProduction || f.production;
+    if (Math.abs(Q - f.capMin) < tolerance) firmsAtLowerCap++;
+    if (Math.abs(Q - f.capMax) < tolerance) firmsAtUpperCap++;
+  });
+
+  const modelHealthChecks: ModelHealthChecks = {
+    sUsesQPrime: true,
+    abatementUsesQPrime: true,
+    costUsesQPrime: true,
+    allPassed: true
+  };
+
+  firms.forEach(f => {
+    const Q = f.actualProduction || f.production;
+    const eS = f.optimalIntensity || 0;
+    const expectedS = Q * (f.target - eS);
+    const expectedAbate = (f.baseIntensity - eS) * Q;
+    const intensityReduction = Math.max(0, f.baseIntensity - eS);
+    const expectedCost = f.k * Q * intensityReduction * intensityReduction;
+
+    if (Math.abs((f.creditBalance || 0) - expectedS) > 0.01) {
+      modelHealthChecks.sUsesQPrime = false;
+      modelHealthChecks.allPassed = false;
+    }
+    if (Math.abs((f.emissionsReduced || 0) - expectedAbate) > 0.01) {
+      modelHealthChecks.abatementUsesQPrime = false;
+      modelHealthChecks.allPassed = false;
+    }
+    if (Math.abs((f.abatementCost || 0) - expectedCost) > 0.01) {
+      modelHealthChecks.costUsesQPrime = false;
+      modelHealthChecks.allPassed = false;
+    }
+  });
+
   return {
     carbonPrice,
     totalEmissionsReduced: result.totalEmissionsReduced,
@@ -226,6 +279,11 @@ function createSimulationResult(
     neutralFirms,
     archetypeSummary,
     equilibriumFound,
-    iterations
+    iterations,
+    firmsAtLowerCap,
+    firmsAtUpperCap,
+    percentAtLowerCap: (firmsAtLowerCap / firms.length) * 100,
+    percentAtUpperCap: (firmsAtUpperCap / firms.length) * 100,
+    modelHealthChecks
   };
 }

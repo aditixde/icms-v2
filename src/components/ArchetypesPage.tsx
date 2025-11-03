@@ -15,7 +15,7 @@ export const ArchetypesPage = () => {
   const navigate = useNavigate();
   const [jitterPercent, setJitterPercent] = useState(10);
   const [seed, setSeed] = useState(42);
-  const [alpha, setAlpha] = useState(0.0005);
+  const [alpha, setAlpha] = useState(0.0002);
   const [capacityBand, setCapacityBand] = useState(0.20);
   const [result, setResult] = useState<FirmSimulationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -238,13 +238,19 @@ export const ArchetypesPage = () => {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <div className="text-sm text-gray-600 mb-1">Total Profit Impact</div>
                 <div className="text-2xl font-bold text-gray-900">
-                  ₹{(result.totalProfitImpact / 1e9).toFixed(2)}B
+                  ₹{(result.totalProfitImpact / 1e7).toFixed(2)} Cr
                 </div>
-                <div className="text-xs text-gray-500 mt-1">billion</div>
+                <div className="text-xs text-gray-500 mt-1">crore</div>
+                {result.modelHealthChecks.allPassed && (
+                  <div className="mt-2 flex items-center space-x-1 text-xs text-green-600">
+                    <span>✓</span>
+                    <span>Health OK</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                 <div className="text-sm text-red-700 mb-1">Credit Buyers</div>
                 <div className="text-3xl font-bold text-red-600">{result.creditBuyers}</div>
@@ -259,7 +265,36 @@ export const ArchetypesPage = () => {
                 <div className="text-sm text-gray-700 mb-1">Neutral</div>
                 <div className="text-3xl font-bold text-gray-600">{result.neutralFirms}</div>
               </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <div className="text-sm text-yellow-700 mb-1">At Lower Cap</div>
+                <div className="text-3xl font-bold text-yellow-600">{result.firmsAtLowerCap}</div>
+                <div className="text-xs text-yellow-600 mt-1">{result.percentAtLowerCap.toFixed(1)}%</div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="text-sm text-blue-700 mb-1">At Upper Cap</div>
+                <div className="text-3xl font-bold text-blue-600">{result.firmsAtUpperCap}</div>
+                <div className="text-xs text-blue-600 mt-1">{result.percentAtUpperCap.toFixed(1)}%</div>
+              </div>
             </div>
+
+            {((result.firmsAtLowerCap + result.firmsAtUpperCap) / result.firms.length * 100) > 70 && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-yellow-700">
+                      High clamping rate ({((result.firmsAtLowerCap + result.firmsAtUpperCap) / result.firms.length * 100).toFixed(1)}%). Consider widening capacity bands or reducing α.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -282,7 +317,7 @@ export const ArchetypesPage = () => {
                         Emissions Reduced (%)
                       </th>
                       <th className="px-4 py-3 text-right font-semibold text-gray-700">
-                        Total Profit Change (₹B)
+                        Total Profit Change (₹ Cr)
                       </th>
                     </tr>
                   </thead>
@@ -304,11 +339,28 @@ export const ArchetypesPage = () => {
                           {archetype.emissionsReducedShare.toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-900">
-                          {(archetype.totalProfitChange / 1e9).toFixed(2)}
+                          {(archetype.totalProfitChange / 1e7).toFixed(2)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                    <tr>
+                      <td className="px-4 py-3 text-gray-700 font-semibold">TOTAL</td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">
+                        {result.archetypeSummary.reduce((s, a) => s + a.count, 0)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">
+                        {result.archetypeSummary.reduce((s, a) => s + a.cccFlowShare, 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">
+                        {result.archetypeSummary.reduce((s, a) => s + a.emissionsReducedShare, 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-700 font-semibold">
+                        {(result.archetypeSummary.reduce((s, a) => s + a.totalProfitChange, 0) / 1e7).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>

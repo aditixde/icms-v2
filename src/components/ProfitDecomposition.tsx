@@ -9,23 +9,23 @@ export const ProfitDecompositionChart = ({ decomposition }: ProfitDecompositionP
   const data = [
     {
       name: 'Abatement Cost',
-      value: -decomposition.totalAbatementCost / 1000,
+      value: -decomposition.totalAbatementCost / 1e7,
       color: '#ef4444'
     },
     {
       name: 'Carbon Cost',
-      value: -decomposition.totalCarbonCost / 1000,
+      value: -decomposition.totalCarbonCost / 1e7,
       color: '#f97316'
     },
     {
       name: 'Carbon Revenue',
-      value: decomposition.totalCarbonRevenue / 1000,
+      value: decomposition.totalCarbonRevenue / 1e7,
       color: '#10b981'
     }
   ];
 
   const formatValue = (value: number) => {
-    return `₹${Math.abs(value).toFixed(1)}k`;
+    return `₹${Math.abs(value).toFixed(1)} Cr`;
   };
 
   return (
@@ -53,13 +53,13 @@ export const ProfitDecompositionChart = ({ decomposition }: ProfitDecompositionP
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="text-sm text-red-800 mb-1">Total Abatement Cost</div>
           <div className="text-2xl font-bold text-red-900">
-            −₹{(decomposition.totalAbatementCost / 1000).toFixed(1)}k
+            −₹{(decomposition.totalAbatementCost / 1e7).toFixed(2)} Cr
           </div>
         </div>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <div className="text-sm text-orange-800 mb-1">Carbon Transfers (Net)</div>
           <div className="text-2xl font-bold text-orange-900">
-            {decomposition.netCarbonTransfer >= 0 ? '+' : ''}₹{(decomposition.netCarbonTransfer / 1000).toFixed(1)}k
+            {decomposition.netCarbonTransfer >= 0 ? '+' : ''}₹{(decomposition.netCarbonTransfer / 1e7).toFixed(2)} Cr
           </div>
           <div className="text-xs text-orange-600 mt-1">
             Should ≈ 0 at equilibrium
@@ -70,7 +70,7 @@ export const ProfitDecompositionChart = ({ decomposition }: ProfitDecompositionP
             Total Profit Impact
           </div>
           <div className={`text-2xl font-bold ${decomposition.totalProfitImpact >= 0 ? 'text-green-900' : 'text-red-900'}`}>
-            {decomposition.totalProfitImpact >= 0 ? '+' : ''}₹{(decomposition.totalProfitImpact / 1000).toFixed(1)}k
+            {decomposition.totalProfitImpact >= 0 ? '+' : ''}₹{(decomposition.totalProfitImpact / 1e7).toFixed(2)} Cr
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@ export const ProfitDecompositionChart = ({ decomposition }: ProfitDecompositionP
           <XAxis type="number" tickFormatter={formatValue} />
           <YAxis dataKey="name" type="category" width={120} />
           <Tooltip
-            formatter={(value: number) => [`₹${Math.abs(value).toFixed(2)}k`, '']}
+            formatter={(value: number) => [`₹${Math.abs(value).toFixed(2)} Cr`, '']}
             labelStyle={{ color: '#111827' }}
           />
           <Bar dataKey="value" radius={[0, 8, 8, 0]}>
